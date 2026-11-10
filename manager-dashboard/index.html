@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TeleCaller Manager Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:   #4F46E5;
+    --primary-lt:#E0E7FF;
+    --accent:    #0EA5E9;
+    --success:   #10B981;
+    --success-lt:#D1FAE5;
+    --error:     #EF4444;
+    --error-lt:  #FEE2E2;
+    --warning:   #F59E0B;
+    --warning-lt:#FEF3C7;
+    --bg:        #F5F7FF;
+    --surface:   #FFFFFF;
+    --border:    #E5E7EB;
+    --text1:     #1E1B4B;
+    --text2:     #6B7280;
+    --text3:     #9CA3AF;
+    --radius:    16px;
+    --shadow:    0 4px 24px rgba(79,70,229,0.08);
+  }
+
+  [data-dark] {
+    --bg:        #0F0E1A;
+    --surface:   #1A1828;
+    --border:    #2D2A45;
+    --text1:     #EDE9FE;
+    --text2:     #A78BFA;
+    --text3:     #6D6A8A;
+    --primary-lt:#2D2A6E;
+    --success-lt:#064E3B;
+    --error-lt:  #450A0A;
+    --warning-lt:#451A03;
+    --shadow:    0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text1);
+    min-height: 100vh; transition: background .2s, color .2s;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--primary);
+    padding: 0 24px;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { color: #fff; font-size: 18px; font-weight: 800; }
+  .logo-sub  { color: rgba(255,255,255,0.65); font-size: 12px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-updated { color: rgba(255,255,255,0.65); font-size: 12px; }
+
+  /* ── Controls ── */
+  .controls {
+    padding: 20px 24px 0;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  select, button {
+    height: 40px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text1);
+    padding: 0 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all .15s;
+  }
+  select:focus, button:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn-primary {
+    background: var(--primary); color: #fff; border-color: var(--primary);
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-icon { width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+  .search-wrap input {
+    width: 100%; height: 40px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text1); padding: 0 14px 0 38px; font-size: 14px;
+  }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); }
+
+  /* ── Summary bar ── */
+  .summary-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; padding: 20px 24px;
+  }
+  .summary-card {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .summary-label { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; }
+  .summary-value { font-size: 28px; font-weight: 800; color: var(--text1); }
+  .summary-sub   { font-size: 12px; color: var(--text2); }
+
+  /* ── Table ── */
+  .table-wrap {
+    padding: 0 24px 32px;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  thead { background: var(--primary); }
+  th {
+    padding: 14px 16px; text-align: left;
+    font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85);
+    letter-spacing: .5px; white-space: nowrap; cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: #fff; }
+  th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+  th.sorted .sort-arrow { opacity: 1; }
+  td {
+    padding: 14px 16px; font-size: 14px; color: var(--text1);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--primary-lt); }
+
+  /* ── Agent name cell ── */
+  .agent-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; flex-shrink: 0;
+  }
+  .agent-name { font-weight: 700; }
+  .agent-id   { font-size: 11px; color: var(--text3); }
+
+  /* ── Stat pills ── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+  }
+  .pill-in  { background: var(--success-lt); color: var(--success); }
+  .pill-out { background: var(--primary-lt); color: var(--primary); }
+  .pill-mis { background: var(--error-lt);   color: var(--error); }
+
+  /* ── Sparkline ── */
+  .sparkline { display: block; }
+
+  /* ── Progress bar ── */
+  .bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--primary); }
+
+  /* ── Status badge ── */
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 6px;
+  }
+
+  /* ── Loading / empty ── */
+  .state-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 80px 24px; gap: 12px;
+    color: var(--text3);
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    header { padding: 0 16px; }
+    .controls, .summary-bar, .table-wrap { padding-left: 16px; padding-right: 16px; }
+    .logo-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📞</div>
+    <div>
+      <div class="logo-text">TeleCaller</div>
+      <div class="logo-sub">Manager Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">—</span>
+    <button class="btn-icon" id="darkToggle" title="Toggle dark mode">🌙</button>
+    <button class="btn-primary" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search agent name or ID…" oninput="renderTable()" />
+  </div>
+  <select id="periodSelect" onchange="loadData()">
+    <option value="1">Today</option>
+    <option value="7" selected>Last 7 Days</option>
+    <option value="30">Last 30 Days</option>
+    <option value="90">Last 90 Days</option>
+  </select>
+  <select id="sortSelect" onchange="renderTable()">
+    <option value="total_calls">Sort: Total Calls</option>
+    <option value="today_calls">Sort: Today's Calls</option>
+    <option value="outgoing">Sort: Outgoing</option>
+    <option value="incoming">Sort: Incoming</option>
+    <option value="missed">Sort: Missed</option>
+    <option value="unique_contacts">Sort: Unique Contacts</option>
+    <option value="total_duration_sec">Sort: Talk Time</option>
+    <option value="name">Sort: Name A–Z</option>
+  </select>
+  <button onclick="exportCSV()">⬇ Export CSV</button>
+</div>
+
+<!-- Summary bar -->
+<div class="summary-bar" id="summaryBar">
+  <div class="state-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table id="agentTable">
+    <thead>
+      <tr>
+        <th onclick="sortBy('name')">Agent <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('total_calls')">Total <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('today_calls')">Today <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('incoming')">Incoming <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('outgoing')">Outgoing <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('missed')">Missed <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('unique_contacts')">Contacts <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('total_duration_sec')">Talk Time <span class="sort-arrow">↕</span></th>
+        <th>7-Day Trend</th>
+        <th onclick="sortBy('last_call_at')">Last Active <span class="sort-arrow">↕</span></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="10"><div class="state-wrap"><div class="spinner"></div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://uzdzduydleytpebpkcte.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_IJ6Hjyn-ULtJPhbasMjWiQ_uEjj4S7g';
+
+let agents    = [];
+let trends    = {};
+let sortField = 'total_calls';
+let sortAsc   = false;
+let dark      = localStorage.getItem('dark') === '1';
+
+// ── Dark mode ──────────────────────────────────────────────────────────────
+function applyDark() {
+  document.body.toggleAttribute('data-dark', dark);
+  document.getElementById('darkToggle').textContent = dark ? '☀️' : '🌙';
+  localStorage.setItem('dark', dark ? '1' : '0');
+}
+document.getElementById('darkToggle').onclick = () => { dark = !dark; applyDark(); };
+applyDark();
+
+// ── Supabase RPC helper ────────────────────────────────────────────────────
+async function rpc(fn, params = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────
+async function loadData() {
+  const days = parseInt(document.getElementById('periodSelect').value, 10);
+  document.getElementById('summaryBar').innerHTML =
+    '<div class="state-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>';
+  document.getElementById('tableBody').innerHTML =
+    '<tr><td colspan="10"><div class="state-wrap"><div class="spinner"></div></div></td></tr>';
+
+  try {
+    agents = await rpc('get_all_agents_summary', { p_days: days });
+
+    // Fetch sparkline trends for each agent in parallel (max 10 at once)
+    trends = {};
+    const chunks = [];
+    for (let i = 0; i < agents.length; i += 10) chunks.push(agents.slice(i, i + 10));
+    for (const chunk of chunks) {
+      await Promise.all(chunk.map(async a => {
+        try {
+          trends[a.caller_id] = await rpc('get_agent_daily_trend', { p_caller_id: a.caller_id, p_days: 7 });
+        } catch { trends[a.caller_id] = []; }
+      }));
+    }
+
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    renderSummary();
+    renderTable();
+  } catch (e) {
+    document.getElementById('summaryBar').innerHTML =
+      `<div class="state-wrap" style="grid-column:1/-1">⚠️ ${e.message}</div>`;
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="10"><div class="state-wrap">⚠️ Failed to load data</div></td></tr>`;
+  }
+}
+
+// ── Summary bar ────────────────────────────────────────────────────────────
+function renderSummary() {
+  const total   = agents.reduce((a, x) => a + +x.total_calls, 0);
+  const today   = agents.reduce((a, x) => a + +x.today_calls, 0);
+  const out     = agents.reduce((a, x) => a + +x.outgoing, 0);
+  const missed  = agents.reduce((a, x) => a + +x.missed, 0);
+  const dur     = agents.reduce((a, x) => a + +x.total_duration_sec, 0);
+  const active  = agents.filter(a => a.last_call_at && new Date(a.last_call_at) > new Date(Date.now() - 86400000)).length;
+
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-card">
+      <div class="summary-label">Total Agents</div>
+      <div class="summary-value">${agents.length}</div>
+      <div class="summary-sub">${active} active today</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Calls</div>
+      <div class="summary-value">${total.toLocaleString()}</div>
+      <div class="summary-sub">${today} today</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Outgoing</div>
+      <div class="summary-value" style="color:var(--primary)">${out.toLocaleString()}</div>
+      <div class="summary-sub">${total ? Math.round(out/total*100) : 0}% of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Missed</div>
+      <div class="summary-value" style="color:var(--error)">${missed.toLocaleString()}</div>
+      <div class="summary-sub">${total ? Math.round(missed/total*100) : 0}% miss rate</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Talk Time</div>
+      <div class="summary-value">${fmtDur(dur)}</div>
+      <div class="summary-sub">avg ${agents.length ? fmtDur(Math.round(dur/agents.length)) : '0m'}/agent</div>
+    </div>
+  `;
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let rows = agents.filter(a =>
+    !q || a.name.toLowerCase().includes(q) || a.employee_id.toLowerCase().includes(q)
+  );
+
+  // Sort
+  rows.sort((a, b) => {
+    const av = sortField === 'name' ? a[sortField] : +a[sortField];
+    const bv = sortField === 'name' ? b[sortField] : +b[sortField];
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
+  const maxCalls = Math.max(...rows.map(r => +r.total_calls), 1);
+  const COLORS = ['#4F46E5','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899'];
+
+  const tbody = document.getElementById('tableBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="state-wrap">No agents found</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map((a, i) => {
+    const color   = COLORS[i % COLORS.length];
+    const initial = (a.name || '?')[0].toUpperCase();
+    const pct     = Math.round(+a.total_calls / maxCalls * 100);
+    const spark   = sparklineSVG(trends[a.caller_id] || [], color);
+    const lastAgo = relTime(a.last_call_at);
+    const isActive = a.last_call_at && new Date(a.last_call_at) > new Date(Date.now() - 3600000);
+
+    return `<tr>
+      <td>
+        <div class="agent-cell">
+          <div class="avatar" style="background:${color}22;color:${color}">${initial}</div>
+          <div>
+            <div class="agent-name">${esc(a.name)}</div>
+            <div class="agent-id">${esc(a.employee_id)}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <strong>${a.total_calls}</strong>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+      </td>
+      <td><strong style="color:${color}">${a.today_calls}</strong></td>
+      <td><span class="pill pill-in">↙ ${a.incoming}</span></td>
+      <td><span class="pill pill-out">↗ ${a.outgoing}</span></td>
+      <td><span class="pill pill-mis">✗ ${a.missed}</span></td>
+      <td>${a.unique_contacts}</td>
+      <td>${fmtDur(+a.total_duration_sec)}</td>
+      <td>${spark}</td>
+      <td>
+        <span class="status-dot" style="background:${isActive ? 'var(--success)' : 'var(--text3)'}"></span>
+        ${lastAgo}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Sparkline SVG ──────────────────────────────────────────────────────────
+function sparklineSVG(data, color) {
+  if (!data.length) return '<span style="color:var(--text3);font-size:12px">No data</span>';
+  const vals = data.map(d => +d.calls);
+  const max  = Math.max(...vals, 1);
+  const W = 80, H = 28, pad = 2;
+  const pts = vals.map((v, i) => {
+    const x = pad + (i / Math.max(vals.length - 1, 1)) * (W - pad * 2);
+    const y = H - pad - (v / max) * (H - pad * 2);
+    return `${x},${y}`;
+  }).join(' ');
+  return `<svg class="sparkline" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${pts.split(' ').pop().split(',')[0]}" cy="${pts.split(' ').pop().split(',')[1]}" r="3" fill="${color}"/>
+  </svg>`;
+}
+
+// ── Sort ───────────────────────────────────────────────────────────────────
+function sortBy(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = false; }
+  document.getElementById('sortSelect').value = field;
+  renderTable();
+}
+
+// ── Export CSV ─────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['Name','Employee ID','Total Calls','Today','Incoming','Outgoing','Missed','Unique Contacts','Talk Time (min)','Last Active'];
+  const rows = agents.map(a => [
+    a.name, a.employee_id, a.total_calls, a.today_calls,
+    a.incoming, a.outgoing, a.missed, a.unique_contacts,
+    Math.round(+a.total_duration_sec / 60),
+    a.last_call_at ? new Date(a.last_call_at).toLocaleString() : '—',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `telecaller-report-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtDur(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function relTime(iso) {
+  if (!iso) return '—';
+  const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (diff < 1)   return 'Just now';
+  if (diff < 60)  return `${diff}m ago`;
+  if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+  return `${Math.floor(diff/1440)}d ago`;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Auto-refresh every 5 minutes ───────────────────────────────────────────
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
